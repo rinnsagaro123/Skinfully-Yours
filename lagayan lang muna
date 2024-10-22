@@ -1,0 +1,1100 @@
+  <section class="products">
+
+   <h1 class="title">Your Cart</h1>
+
+   <div class="box-container">
+
+      <?php
+         $grand_total = 0;
+         $select_cart = $conn->prepare("SELECT * FROM `cart` WHERE user_id = ?");
+         $select_cart->execute([$user_id]);
+         if($select_cart->rowCount() > 0){
+            while($fetch_cart = $select_cart->fetch(PDO::FETCH_ASSOC)){
+      ?>
+      <form action="" method="post" class="box">
+         <input type="hidden" name="cart_id" value="<?= $fetch_cart['id']; ?>">
+         <button type="submit" class="fas fa-times" name="delete" onclick="return confirm('delete this item?');"></button>
+         <div class="image">
+         <a href="quick_view.php?pid=<?= $fetch_cart['pid']; ?>"> <img src="uploaded_img/<?= $fetch_cart['image']; ?>" alt=""></a>
+            </div>
+         <div class="name"><?= $fetch_cart['name']; ?></div>
+         <div class="flex">
+            <div class="price"><span>₱</span><?= $fetch_cart['price']; ?></div>
+            <input type="number" name="qty" class="qty" min="1" max="99" value="<?= $fetch_cart['quantity']; ?>" maxlength="2">
+            <button type="submit" class="fas fa-edit" name="update_qty"></button>
+         </div>
+         <div class="sub-total"> sub total : <span>₱<?= $sub_total = ($fetch_cart['price'] * $fetch_cart['quantity']); ?>/-</span> </div>
+      </form>
+      <?php
+               $grand_total += $sub_total;
+            }
+         }else{
+            echo '<p class="empty">your cart is empty</p>';
+         }
+      ?>
+
+   </div>
+
+   <div class="cart-total">
+      <p>cart total : <span>₱<?= $grand_total; ?></span></p>
+      <a href="checkout.php" class="btn <?= ($grand_total > 1)?'':'disabled'; ?>">proceed to checkout</a>
+   </div>
+
+   <div class="more-btn">
+      <form action="" method="post">
+         <button type="submit" class="delete-btn <?= ($grand_total > 1)?'':'disabled'; ?>" name="delete_all" onclick="return confirm('delete all from cart?');">delete all</button>
+      </form>
+      <a href="menu.php" class="btn">Continue Shopping</a>
+   </div>
+
+</section>
+
+
+
+
+
+
+
+
+product approve
+
+<?php
+
+include '../components/config.php';
+
+session_start();
+
+$admin_id = $_SESSION['admin_id'];
+
+if(!isset($admin_id)){
+   header('location:admin_login.php');
+};
+
+if(isset($_POST['submit'])){
+
+
+   $user_id = $_POST['user_id'];
+   $order_no =  $_POST['oid'];
+   $placed_on = $_POST['placed_on'];
+   $name = $_POST['name'];
+   $number = $_POST['number'];
+   $address = $_POST['address'];
+   $method = $_POST['method'];
+   $total_products = $_POST['total_products'];
+   $total_price = $_POST['total_price'];
+   $payment_status = $_POST['payment_status'];
+
+ 
+         
+         $insert_order = $conn->prepare("INSERT INTO `orders_approve`(admin_id, user_id, order_number, name, number, method, address, total_products, total_price, placed_on, payment_status) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
+         $insert_order->execute([$admin_id, $user_id, $order_no, $name, $number, $method, $address, $total_products, $total_price, $placed_on, $payment_status]);
+ 
+         // $delete_cart = $conn->prepare("DELETE FROM `cart` WHERE user_id = ?");
+         // $delete_cart->execute([$user_id]);
+ 
+         echo $message[] = 'Approved!';
+}
+      
+
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>placed orders</title>
+
+   <!-- font awesome cdn link  -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+
+   <!-- custom css file link  -->
+   <link rel="stylesheet" href="../style/admin_style.css?v=<?php echo time(); ?>">
+
+</head>
+<body>
+
+<?php include '../components/admin_header.php' ?>
+
+<div class="box-container">
+
+<?php
+
+      $select_orders = $conn->prepare("SELECT * FROM `orders` WHERE user_id = ? and payment_status = 'pending'");
+      $select_orders->execute([$admin_id]);
+      if($select_orders->rowCount() > 0){
+         while($fetch_orders = $select_orders->fetch(PDO::FETCH_ASSOC)){
+?>
+<div class="box">
+      <p>order number : <span><?= $fetch_orders['id']; ?></span></p>
+      <p>placed on : <span><?= $fetch_orders['placed_on']; ?></span></p>
+      <p>name : <span><?= $fetch_orders['name']; ?></span></p>
+      <p>email : <span><?= $fetch_orders['email']; ?></span></p>
+      <p>number : <span><?= $fetch_orders['number']; ?></span></p>
+      <p>address : <span><?= $fetch_orders['address']; ?></span></p>
+      <p>payment method : <span><?= $fetch_orders['method']; ?></span></p>
+      <p>your orders : <span><?= $fetch_orders['total_products']; ?></span></p>
+      <p>total price : <span>₱<?= $fetch_orders['total_price']; ?>/-</span></p>
+      <p> payment status : <span style="color:<?php if($fetch_orders['payment_status'] == 'pending'){ echo 'red'; }else{ echo 'green'; }; ?>"><?= $fetch_orders['payment_status']; ?></span> </p>
+      
+
+      <form action=" " method="POST" class="box">
+         <input type="hidden" name="oid" value="<?= $fetch_orders['id']; ?>">
+         <input type="hidden" name="user_id" value="<?= $fetch_orders['user_id']; ?>">
+         <input type="hidden" name="placed_on" value="<?= $fetch_orders['placed_on']; ?>">
+         <input type="hidden" name="name" value="<?= $fetch_orders['name']; ?>">
+         <input type="hidden" name="number" value="<?= $fetch_orders['number']; ?>">
+         <input type="hidden" name="address" value="<?= $fetch_orders['address']; ?>">
+         <input type="hidden" name="method" value="<?= $fetch_orders['method']; ?>">
+         <input type="hidden" name="total_products" value="<?= $fetch_orders['total_products']; ?>">
+         <input type="hidden" name="total_price" value="<?= $fetch_orders['total_price']; ?>">
+         <input type="hidden" name="payment_status" value="To ship">
+         <input type="submit" name="submit">
+         <button type="submit" name="submit" value="approve">Approve</button>
+         <button type="submit" name="decline" value="decline"><a href="decline-reason.php">Decline</a></button>
+      </form>
+   </div>
+   <?php
+      }
+      }else{
+         echo '<p class="empty">no orders placed yet!</p>';
+      }
+      
+   ?>
+
+   </div>
+
+<!-- custom js file link  -->
+<script src="../js/admin_script.js?v=<?php echo time(); ?>"></script>
+
+</body>
+</html>
+
+<!-- custom js file link  -->
+<script src="../js/admin_script.js?v=<?php echo time(); ?>"></script>
+
+</body>
+</html>
+
+
+<!-- /////////////////// -->
+
+
+<?php
+
+include '../components/config.php';
+
+session_start();
+
+$admin_id = $_SESSION['admin_id'];
+$user_id = $_SESSION['user_id'];
+
+if(!isset($admin_id)){
+   header('location:admin_login.php');
+};
+
+if(isset($_POST['submit'])){
+
+   $user_id = $_POST['user_id'];
+   $order_no =  $_POST['oid'];
+   $placed_on = $_POST['placed_on'];
+   $name = $_POST['name'];
+   $number = $_POST['number'];
+   $address = $_POST['address'];
+   $method = $_POST['method'];
+   $total_products = $_POST['total_products'];
+   $total_price = $_POST['total_price'];
+   $payment_status = $_POST['payment_status'];
+
+ 
+         
+         $insert_order = $conn->prepare("UPDATE `orders` SET user_id = ?, admin_id = ?, order_number = ?, payment_status = ? WHERE id = ?");
+         $insert_order->execute([$user_id, $admin_id, $order_no, $payment_status, $order_id]);
+ 
+         // $delete_cart = $conn->prepare("DELETE FROM `cart` WHERE user_id = ?");
+         // $delete_cart->execute([$user_id]);
+ 
+         echo $message[] = 'Approved!';
+}
+      
+
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>placed orders</title>
+
+   <!-- font awesome cdn link  -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+
+   <!-- custom css file link  -->
+   <link rel="stylesheet" href="../style/admin_style.css?v=<?php echo time(); ?>">
+
+</head>
+<body>
+
+<?php include '../components/admin_header.php' ?>
+
+<div class="box-container">
+
+<?php
+ if($user_id == ''){
+    echo '<p class="empty">please login to see your orders</p>';
+ }else{
+      $select_orders = $conn->prepare("SELECT * FROM `orders` WHERE user_id = ? and payment_status = 'pending'");
+      $select_orders->execute([$user_id]);
+      if($select_orders->rowCount() > 0){
+         while($fetch_orders = $select_orders->fetch(PDO::FETCH_ASSOC)){
+?>
+<div class="box">
+      <p>order number : <span><?= $fetch_orders['id']; ?></span></p>
+      <p>placed on : <span><?= $fetch_orders['placed_on']; ?></span></p>
+      <p>name : <span><?= $fetch_orders['name']; ?></span></p>
+      <p>email : <span><?= $fetch_orders['email']; ?></span></p>
+      <p>number : <span><?= $fetch_orders['number']; ?></span></p>
+      <p>address : <span><?= $fetch_orders['address']; ?></span></p>
+      <p>payment method : <span><?= $fetch_orders['method']; ?></span></p>
+      <p>your orders : <span><?= $fetch_orders['total_products']; ?></span></p>
+      <p>total price : <span>₱<?= $fetch_orders['total_price']; ?>/-</span></p>
+      <p> payment status : <span style="color:<?php if($fetch_orders['payment_status'] == 'pending'){ echo 'red'; }else{ echo 'green'; }; ?>"><?= $fetch_orders['payment_status']; ?></span> </p>
+      
+
+      <form action=" " method="POST" class="box">
+
+         <input type="hidden" name="oid" value="<?= $fetch_orders['id']; ?>">
+         <input type="hidden" name="user_id" value="<?= $fetch_orders['user_id']; ?>">
+         <input type="hidden" name="placed_on" value="<?= $fetch_orders['placed_on']; ?>">
+         <input type="hidden" name="name" value="<?= $fetch_orders['name']; ?>">
+         <input type="hidden" name="number" value="<?= $fetch_orders['number']; ?>">
+         <input type="hidden" name="address" value="<?= $fetch_orders['address']; ?>">
+         <input type="hidden" name="method" value="<?= $fetch_orders['method']; ?>">
+         <input type="hidden" name="total_products" value="<?= $fetch_orders['total_products']; ?>">
+         <input type="hidden" name="total_price" value="<?= $fetch_orders['total_price']; ?>">
+         <input type="hidden" name="payment_status" value="To ship">
+         <input type="submit" name="submit">
+         <button type="submit" name="submit" value="approve">Approve</button>
+         <button type="submit" name="decline" value="decline"><a href="decline-reason.php">Decline</a></button>
+      </form>
+   </div>
+   <?php
+      }
+      }else{
+         echo '<p class="empty">no orders placed yet!</p>';
+      }
+   }
+      
+   ?>
+
+   </div>
+
+<!-- custom js file link  -->
+<script src="../js/admin_script.js?v=<?php echo time(); ?>"></script>
+
+</body>
+</html>
+
+<!-- custom js file link  -->
+<script src="../js/admin_script.js?v=<?php echo time(); ?>"></script>
+
+</body>
+</html>
+
+
+//////////////////////
+
+
+<?php
+
+include 'config.php';
+
+?>
+
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-danger">
+  <a class="navbar-brand" href="#">Navbar</a>
+  <!-- <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button> -->
+
+  <?php
+            $count_cart_items = $conn->prepare("SELECT * FROM `orders` WHERE payment_status = 'To ship'");
+            $count_cart_items->execute();
+            $total_cart_items = $count_cart_items->rowCount();
+?>
+<div class="container">
+  <!-- <div class="collapse navbar-collapse" id="navbarSupportedContent"> -->
+    <ul class="navbar-nav mr-auto">
+      <!-- <li class="nav-item active">
+        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#">Link</a>
+      </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Dropdown
+        </a> -->
+        <!-- <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+          <a class="dropdown-item" href="#">Action</a>
+          <a class="dropdown-item" href="#">Another action</a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="#">Something else here</a>
+        </div> -->
+      <!-- </li> -->
+ 
+      <li class="nav-item">
+        <a class="nav-link" href="delivery_index.php">Orders<span>(<?= $total_cart_items; ?>)</span></a>
+      </li>  
+      <li class="nav-item">
+        <a class="nav-link" href="delivery_todo.php">Todo</a>
+      </li>  
+      <li class="nav-item">
+        <a class="nav-link" href="delivery_delivered.php">Delivered</a>
+      </li> 
+
+    <div class="logout">
+      <li class="nav-item">
+        <a class="nav-link" href="delivery_logout.php">Logout</a>
+      </li>
+    </div>
+    </ul>
+    
+       
+
+</div>
+<div class="icons">
+<div id="user-btn" class="fas fa-user"> </div>
+        <a href="notification.php"><div id="notif-btn" class="fa-solid fa-bell position-relative"><span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"></span></div></a>
+</div>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
+ integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V" crossorigin="anonymous"></script>
+</body>
+</html>
+
+
+
+/././././././
+
+
+$delete_notif = $conn->prepare("DELETE FROM `notif` WHERE user_id = ?");
+        $delete_notif->execute([$user_id]);    
+
+
+        >>>?>..
+
+        
+        $update_notif = $conn->prepare("UPDATE `notif` SET `admin_id` = ?, `order_number` = ?, `order_name` = ?, `order_products` = ?, `order_price` = ?, `order_address` = ?, `notify_rider` = ?, `notify` = ?, `status` = ?, `from` = ? where `user_id` = ?;");
+        $update_notif->execute([$admin_id, $order_number, $order_name, $order_products, $order_price, $order_address, $notify_rider, $notif, $status, $from, $user]);
+
+
+        ...........////////////////////////////
+
+
+        
+
+<div class="box-container">
+<h1 class="heading">Notification</h1>
+        <div class="box">
+  
+        <?php
+              if($user_id == ''){
+                echo '<p class="empty">please login first!</p>';
+              }else
+               {
+  
+                $notification = $conn->prepare("SELECT * from `notification` Where admin_id = 1 and user_id = ?'");
+                $notification->execute([$user_id]);
+                if($notification->rowCount() > 0)
+                {
+                    while($fetch_notif = $notification->fetch(PDO::FETCH_ASSOC)){
+
+                    ?>
+                        
+                        <a class="btn"><h3><span></span></h3>
+                        <h3><span>User ID: <?= $fetch_notif['user_id']; ?></span></h3></a>
+
+                        <form action="" method="POST">
+                        <input type="hidden" name="user_id" value="<?= $fetch_notif['user_id']; ?>">
+                        <input type="hidden" name="status" value="seen">
+                        <input type="submit" name="submit" value="Seen">
+                        </form>
+                <?php
+                }}}
+                
+                ?>
+    
+        
+        </div>
+        
+    </div>
+
+?>,/,a./sdasjdhasiodhsaokdhsakohdsahdksa
+
+
+
+
+
+
+
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans&family=Poppins:wght@100;300;400;500;600&display=swap');
+
+
+:root
+{
+    --orange: #ff7800;
+    --black: #130f40;
+    --light-color: #666;
+    --white: #fff;
+    ---box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.1);
+    --outline: .1rem solid rgba(0,0,0,.1);
+    --outline-hover: .2rem solid var(--black);
+    --main-color: #000000;
+    --red:#e74c3c;
+    --orange:#df0d6f;
+    --white:#fff;
+    --light-bg:#f5f5f5;
+    --light-color:#999;
+    --border:.2rem solid var(--black);
+
+
+}
+
+
+*
+{
+    font-family: 'Poppins', sans-serif;
+    margin: 0; padding: 0;
+    box-sizing: border-box;
+    outline: none; border: none;
+    text-decoration: none;
+    text-transform: none;
+    transition: all .2s linear;
+
+}
+
+html
+{
+    font-size: 62.5%;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    scroll-padding-top: 7rem;
+}
+
+body
+{
+    background: #eee;
+}
+
+.box-container {
+   display: flex;
+   flex-wrap: wrap;
+   justify-content: center;
+   align-items: center;
+   text-align: center;
+   
+ }
+
+ .box {
+   width: 50%;
+   padding: 20px;
+   /* background-color: lightpink; */
+   margin: 20px;
+   box-shadow: 2px 2px 10px gray;
+   border: var(--border);
+ }
+
+ .box-notif {
+   width: 50%;
+   padding: 20px;
+   /* background-color: lightpink; */
+   /* margin: 20px; */
+   box-shadow: 2px 2px 10px gray;
+   border: var(--border);
+ }
+
+ p {
+   margin: 5px 0;
+   font-size: 16px;
+ }
+
+ p span {
+   font-weight: bold;
+ }
+
+ input[type="submit"] {
+   background-color: #4CAF50;
+   border: none;
+   color: white;
+   padding: 10px 10px;
+   text-decoration: none;
+   margin: 4px 2px;
+   cursor: pointer;
+   border-radius: 5px;
+ }
+
+ .notification .box-container {
+   display: flex;
+   flex-wrap: wrap;
+   justify-content: center;
+  
+ }
+
+ .notification .box-container .box {
+   width: 50%;
+   padding: 20px;
+   background:rgb(248, 244, 231);
+   margin: 20px;
+   box-shadow: 2px 2px 10px gray;
+   align-items: center;
+   justify-content: center;
+   text-align: center;
+   gap: 1.5rem;
+ }
+
+ .notification .box-container .box .box
+ {
+   display: flex;
+   width: 80%;
+   align-items: center;
+   justify-content: center;
+   text-align: center;
+   margin: 0 auto;
+   gap: 1.5rem;
+ }
+
+ .notification .box-container p {
+   margin: 5px 0;
+   font-size: 16px;
+ }
+
+ .notification .box-container p span {
+   font-weight: bold;
+ }
+
+ .notification .box-container  input[type="submit"] {
+   background-color: #000000;
+   border: var(--border);
+   color: white;
+   padding: 10px 10px;
+   text-decoration: none;
+   margin: 4px 2px;
+   cursor: pointer;
+   border-radius: 5px;
+ }
+.header{
+   position:grid;
+   top:0; left:0; right:0;
+   background:#fff;
+   padding:1rem 9%;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   z-index: 1000;
+   box-shadow: 0 .5rem 1rem rgba(0,0,0,.1);
+}
+.heading{
+   text-align: center;
+   font-size: 4rem;
+   color:#333;
+   padding:1rem;
+   margin:2rem 0;
+
+}
+
+.header .logo{
+   font-size: 2rem;
+   color:rgb(36, 34, 25);
+   font-weight: bolder;
+   position: static;
+   text-decoration: none;
+}
+
+.header .logo img
+{
+  position: fixed;
+  width: 15%;
+  margin-left: -7rem;
+  /* margin-top: ; */
+}
+.header .container .navbar{
+   position: fixed;
+   top: 0; left: 0; right: 0;
+   z-index: 1000;
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   padding: 2rem 9%;
+   background: #fff;
+}
+
+.header .container .navbar
+{
+   margin-left: 35rem;
+} 
+
+.header .navbar a{
+   font-size: 1.5rem;
+   padding:0 1.5rem;
+   color:rgb(7, 7, 7);
+   position:relative;
+   left: 170px ;
+   text-decoration: none;
+}
+
+.header .navbar a:hover{
+   color:var(--pink);
+}
+
+/* header .icons div
+{.
+   height: 4.5rem;
+   width: 4.5rem;
+   line-height: 4.5rem;
+   border-radius: .5rem;
+   background: #eee;
+   color: black;
+   font-size: 2rem;
+   margin-left: .3rem;
+   cursor: pointer;
+   text-align: center;
+} */
+
+
+.header .icon a{
+   position: grid;
+   color:rgb(7, 7, 7);
+}
+
+.header .icon div:hover{
+   color:var(--pink);
+}
+
+
+.header #toggler{
+   display: none;
+}
+
+/* header .fa-bars{
+ .  font-size: 3rem;
+   color:#333;
+   border-radius: .5rem;
+   padding:.5rem 1.5rem;
+   cursor: pointer;
+   border:.1rem solid rgba(0,0,0,.3);
+   display: none;
+   position: relative;
+} */
+
+
+.header .icon
+{
+   height: 4.5rem;
+   width: 15rem;
+   line-height: 4.5rem;
+   border-radius: .5rem;
+   color: black;
+   font-size: 2rem;
+   margin-left: 12rem;
+   cursor: pointer;
+   text-align: center;
+}
+
+.header .icon span
+{
+   font-size: small;
+}
+
+#menu-btn
+{
+   display: none;
+}
+
+.header .profile
+{
+   background-color: var(--white);
+   border:var(--border);
+   padding:1.5rem;
+   text-align: center;
+   position: absolute;
+   top:125%; right:2rem;
+   width: 30rem;
+   display: none;
+   animation: fadeIn .2s linear;
+}
+
+.header .profile .flex
+{
+   position: relative;
+   font-size: large;
+}
+
+.header .profile a
+{
+   color: black;
+   text-decoration: none;
+}
+
+.header .profile a:hover
+{
+   color:var(--pink);
+}
+
+.header .profile #notif-btn span
+{
+  margin-left: 5rem;
+}
+
+.header .profile.active{
+  display: inline-block;
+
+}
+
+
+.header-order
+{
+   position: static;
+   top:0; left:0; right:0;
+   background:#fff;
+   padding:1rem 9%;
+   display: grid;
+   align-items: center;
+   justify-content: space-between;
+   z-index: 1000;
+   box-shadow: 0 .5rem 1rem rgba(0,0,0,.1);
+}
+
+.header-order .container .navbar-delivery a
+{
+   font-size: 2.5rem;
+   align-items: center;
+   margin-left: 7rem;
+   color: #000000;
+   box-shadow: 0 .5rem 1rem rgba(0,0,0,.1);
+}
+
+
+.message{
+   position: sticky;
+   top:0;
+   max-width: 1200px;
+   margin:0 auto;
+   padding:2rem;
+   display: flex;
+   align-items: center;
+   gap:1rem;
+   justify-content: space-between;
+   background-color: var(--orange);
+}
+
+.message span{
+   font-size: 2rem;
+   color:var(--black);
+}
+
+.message i{
+   font-size: 2.5rem;
+   color:var(--white);
+   cursor: pointer;
+}
+
+.message i:hover{
+   color:var(--black);
+}
+
+.navbar .container
+{
+   position: relative;
+
+}
+
+.navbar .container .logout
+{
+   position: relative;
+   margin-left: 50rem;
+}
+
+
+.placed-orders .box-container{
+
+   display: flex;
+   width: 100%;
+   gap:1.5rem;
+   align-items: center;
+   justify-content: center;
+   
+   
+}
+
+.placed-orders .box-container .box{
+   background-color: var(--white);
+   border-radius: .5rem;
+   box-shadow: var(--box-shadow);
+   padding:1rem;
+   padding-top: 1rem;
+   border:var(--border);
+   text-align: center;
+   background-color: var(--white);
+   border:var(--border);
+   box-shadow: var(--box-shadow);
+   border-radius: .5rem;
+   text-align: center;
+   padding:1.5rem;
+}
+
+.placed-orders .box-container .box .boxbox
+.placed-orders .box-container .box p{
+   padding: .5rem 0;
+   line-height: 1.5;
+   font-size: 1.8rem;
+   color:var(--black);
+}
+
+.placed-orders .box-container .box p span{
+   color:var(--main-color);
+}
+
+
+.placed-order .box-container{
+
+   display: flex;
+   flex-direction: column-reverse;
+   width: 100%;
+   gap:1.5rem;
+   align-items: center;
+   justify-content: center;
+   
+   
+   
+}
+
+.placed-order .box-container .box{
+   
+   background-color: var(--white);
+   border-radius: .5rem;
+   box-shadow: var(--box-shadow);
+   padding:1rem;
+   padding-top: 1rem;
+   border:var(--border);
+   text-align: center;
+   background-color: var(--white);
+   border:var(--border);
+   box-shadow: var(--box-shadow);
+   border-radius: .5rem;
+   text-align: center;
+   padding:1.5rem;
+}
+
+.placed-order .box-container .box .boxbox
+.placed-order .box-container .box p{
+   padding: .5rem 0;
+   line-height: 1.5;
+   font-size: 1.8rem;
+   color:var(--black);
+}
+
+.placed-order .box-container .box p span{
+   color:var(--main-color);
+}
+
+
+
+.orders .box-container{
+   display: flex;
+   flex-direction: row-reverse;
+   grid-template-columns: repeat(auto-fit, 33rem);
+   justify-content: center;
+   align-items: flex-start;
+   gap:1.5rem;
+}
+
+.orders .box-container .box{
+   border:var(--border);
+   padding:1.5rem;
+   position: relative;
+   overflow: hidden;
+}
+
+.orders .box-container .box img{
+   height: 25rem;
+   width: 100%;
+   object-fit: contain;
+   margin-bottom: 1rem;
+}
+
+.notification .box-container .box #value
+{
+   text-align: center;
+}
+
+
+
+@media (max-width:991px){
+
+   html{
+      font-size: 52%;
+   }
+
+    #menu-btn
+    {
+      display: inline-block
+    }
+    
+    
+    .header .icon
+    {
+      position:absolute;
+      margin-left: 30rem;
+    }
+    
+    .header .container .navbar
+    {
+        position: absolute;
+        top: 110%; right:-110%;
+        width: 20rem;
+        box-shadow: var(---box-shadow);
+        background: #fff;
+    }
+
+    .header .container .navbar.active 
+    {
+        right: 5rem;
+        transition: -2s linear;
+        background: #fff;
+    }
+
+    .header .container .navbar a 
+    {
+        font-size: 2rem;
+        right: -10rem;
+        margin: 1rem;
+        border-radius: .5rem;
+       
+
+    }
+    .home .content h3{
+        font-size: 5rem;
+    }
+
+    .home .content span{
+        font-size: 2.5rem;
+    }
+
+    .home .search {
+        font-size: 2rem;
+    }
+
+    .icons-container .icons h3{
+        font-size: 2rem;
+    }
+    
+    .icons-container .icons span{
+        font-size: 1.7rem;
+    }
+
+    .wrapper .project .shop
+    {
+       width: 100%
+    }
+ 
+    .wrapper .project .rightbar
+    {
+       width: 100%
+    }
+    
+}
+
+@media (max-width: 480px) {
+   .home {
+      background-image:url(images/Bg.png);
+
+   }
+}
+@media (min-width: 481px) and (max-width: 1024px) {
+   .home {
+      background-image:url(images/Bg.png);
+   }
+   
+   .w
+}
+
+@media (min-width: 1025px) {
+   .home {
+      background-image:url(images/Bg.png);
+  }
+}
+
+@media (max-width:768px){
+
+   #menu-btn{
+      display: inline-block;
+   }
+/* 
+   .header .flex .navbar{
+      position: absolute;
+      top:99%; left:0; right:0;
+      border-top: var(--border);
+      border-bottom: var(--border);
+      background-color: var(--white);
+      clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+      transition: .2s linear;
+   }
+
+   .header .flex .navbar.active{
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+   }
+
+   .header .flex .navbar a{
+      display: block;
+      margin:2rem;
+   } */
+
+  
+
+}
+
+@media (max-width:375px){
+    
+   .header-order
+  {
+   display: grid;
+   font-size: 5%;
+  }
+   .btn2 {
+      position: absolute;
+      bottom: 10rem;
+      right: 0;
+    }
+    html{
+        font-size: 50%;
+    }
+
+    .flex-btn{
+      flex-flow: column;
+      gap:0;
+   }
+
+    .heading{
+        font-size: 3rem;
+    }
+   
+    
+    html
+    {
+    font-size: 50%;
+    }
+
+    .heading
+    {
+        font-size: 2.5rem;
+    }
+
+}
